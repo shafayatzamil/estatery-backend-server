@@ -2,6 +2,7 @@
 const express = require("express");
 const cors = require("cors");
 const ootenv = require("dotenv").config();
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const app = express();
 let colors = require("colors");
@@ -37,6 +38,7 @@ dbConnect();
 // database set of collection
 
 const usersCollection = client.db("estatery").collection("users");
+
 // set route and implemented
 app.get("/", (req, res) => {
   res.send("Server is running  On default route");
