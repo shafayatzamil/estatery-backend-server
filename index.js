@@ -1,7 +1,7 @@
 //install require environment
 const express = require("express");
 const cors = require("cors");
-const ootenv = require("dotenv").config();
+const dotenv = require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const app = express();
@@ -39,11 +39,35 @@ dbConnect();
 
 const usersCollection = client.db("estatery").collection("users");
 
-// set route and implemented
-app.get("/", (req, res) => {
-  res.send("Server is running  On default route");
+// jwt route
+app.post("/jwt", (req, res) => {
+  const user = req.body;
+  // console.log(user);
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: "1h",
+  });
+  res.send({ token });
 });
 
+// set route and implemented
+
+// default route set
+app.get("/", (req, res) => {
+  try {
+    res.status(200).send({
+      success: true,
+      message: "Welcome to Estatery API on default route",
+    });
+  } catch (error) {
+    console.log(error.name.bgRed, error.message.bold);
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// server is running in this route
 app.listen(port, () => {
   console.log(`Server is Running on this ${port} port`.green);
 });
