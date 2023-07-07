@@ -12,6 +12,25 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// function to verifyJWT
+function verifyJWT(req, res, next) {
+  const authHeader = req.header.authorization;
+
+  if (!authHeader) {
+    res.status(401).send({ message: "Unauthorized User" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  // Verify JWT Token came from front end
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+    if (err) {
+      return res.status(403).send("Invalid or expired token");
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
+
 // Database url
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.cruea6x.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -36,10 +55,9 @@ async function dbConnect() {
 dbConnect();
 
 // database set of collection
-
 const usersCollection = client.db("estatery").collection("users");
 
-// jwt route
+// jwt route token generation
 app.post("/jwt", (req, res) => {
   const user = req.body;
   // console.log(user);
