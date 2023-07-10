@@ -85,6 +85,55 @@ app.get("/", (req, res) => {
   }
 });
 
+// user came from front end
+
+app.post("/users", async (req, res) => {
+  try {
+    const users = req.body;
+    const result = await usersCollection.insertOne(users);
+    if (result.insertedId) {
+      res.send({
+        success: true,
+        message: `Successfully created  the users with id ${result.insertedId}`,
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "Couldn't create the users",
+      });
+    }
+  } catch (error) {
+    console.log(error.name.bgRed, error.message.bold);
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// all users
+
+app.get("/users", async (req, res) => {
+  // const cursor = usersCollection.find({});
+  // const allUsers = await cursor.toArray();
+  // res.send(allUsers);
+  try {
+    const cursor = usersCollection.find({});
+    const allUsers = await cursor.toArray();
+    res.send({
+      success: true,
+      message: "successfully got the all users data",
+      data: allUsers,
+    });
+  } catch (error) {
+    console.log(error.name.bgRed, error.message.bold);
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // server is running in this route
 app.listen(port, () => {
   console.log(`Server is Running on this ${port} port`.green);
