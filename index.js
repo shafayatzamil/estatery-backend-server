@@ -56,13 +56,14 @@ dbConnect();
 
 // database set of collection
 const usersCollection = client.db("estatery").collection("users");
+const propertyCollection = client.db("estatery").collection("propertys");
 
 // jwt route token generation
 app.post("/jwt", (req, res) => {
   const user = req.body;
   // console.log(user);
   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-    expiresIn: "1h",
+    expiresIn: "1d",
   });
   res.send({ token });
 });
@@ -114,9 +115,6 @@ app.post("/users", async (req, res) => {
 // all users
 
 app.get("/users", async (req, res) => {
-  // const cursor = usersCollection.find({});
-  // const allUsers = await cursor.toArray();
-  // res.send(allUsers);
   try {
     const cursor = usersCollection.find({});
     const allUsers = await cursor.toArray();
@@ -133,6 +131,55 @@ app.get("/users", async (req, res) => {
     });
   }
 });
+
+app.post("/addproperty", async (req, res) => {
+  try {
+    const addProperties = req.body;
+    const result = await propertyCollection.insertOne(addProperties);
+    if (result.insertedId) {
+      res.send({
+        success: true,
+        message: `Successfully created  the Property with id ${result.insertedId}`,
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "Couldn't create the Property",
+      });
+    }
+  } catch (error) {
+    console.log(error.name.bgRed, error.message.bold);
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.get("/property", async (req, res) => {
+  try {
+    const cursor = propertyCollection.find({});
+    const allUsers = await cursor.toArray();
+    res.send({
+      success: true,
+      message: "successfully got the all Property data",
+      data: allUsers,
+    });
+  } catch (error) {
+    console.log(error.name.bgRed, error.message.bold);
+    res.status(400).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// app.get("/users/useseller/:email", async (req, res) => {
+//   const email = req.params.email;
+//   const cursor = { email };
+//   const useSeller = await usersCollection.findOne(cursor);
+//   res.send(useSeller);
+// });
 
 // server is running in this route
 app.listen(port, () => {
