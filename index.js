@@ -195,24 +195,24 @@ app.get("/rent", async (req, res) => {
 });
 
 // sell property type
-// app.get("/sell", async (req, res) => {
-//   try {
-//     const query = { propertyType: "Sell" };
-//     const cursor = propertyCollection.find(query);
-//     const allSell = await cursor.toArray();
-//     res.status(200).send({
-//       success: true,
-//       message: "successfully got the all Sell data",
-//       data: allSell,
-//     });
-//   } catch (error) {
-//     console.log(error.name.bgRed, error.message.bold);
-//     res.status(404).send({
-//       success: false,
-//       error: error.message,
-//     });
-//   }
-// });
+app.get("/sell", async (req, res) => {
+  try {
+    const query = { propertyType: "Sell" };
+    const cursor = propertyCollection.find(query);
+    const allSell = await cursor.toArray();
+    res.status(200).send({
+      success: true,
+      message: "successfully got the all Sell data",
+      data: allSell,
+    });
+  } catch (error) {
+    console.log(error.name.bgRed, error.message.bold);
+    res.status(404).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
 
 // app.get("/users/useseller/:email", async (req, res) => {
 //   const email = req.params.email;
