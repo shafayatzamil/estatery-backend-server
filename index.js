@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 let colors = require("colors");
 const port = process.env.PORT || 5000;
@@ -86,8 +86,7 @@ app.get("/", (req, res) => {
   }
 });
 
-// user came from front end
-
+// user created
 app.post("/users", async (req, res) => {
   try {
     const users = req.body;
@@ -132,6 +131,7 @@ app.get("/users", async (req, res) => {
   }
 });
 
+// create add property
 app.post("/addproperty", async (req, res) => {
   try {
     const addProperties = req.body;
@@ -156,6 +156,7 @@ app.post("/addproperty", async (req, res) => {
   }
 });
 
+//get the all property
 app.get("/property", async (req, res) => {
   try {
     const cursor = propertyCollection.find({});
@@ -204,6 +205,27 @@ app.get("/sell", async (req, res) => {
       success: true,
       message: "successfully got the all Sell data",
       data: allSell,
+    });
+  } catch (error) {
+    console.log(error.name.bgRed, error.message.bold);
+    res.status(404).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// single sell property by id
+app.get("/sell/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const singleSellProperty = await propertyCollection.findOne({
+      _id: new ObjectId(id),
+    });
+    res.status(200).send({
+      success: true,
+      message: "successfully got the single  Sell data",
+      data: singleSellProperty,
     });
   } catch (error) {
     console.log(error.name.bgRed, error.message.bold);
