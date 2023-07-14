@@ -93,12 +93,12 @@ app.post("/users", async (req, res) => {
     const users = req.body;
     const result = await usersCollection.insertOne(users);
     if (result.insertedId) {
-      res.send({
+      res.status(200).send({
         success: true,
         message: `Successfully created  the users with id ${result.insertedId}`,
       });
     } else {
-      res.send({
+      res.status(400).send({
         success: false,
         error: "Couldn't create the users",
       });
@@ -118,14 +118,14 @@ app.get("/users", async (req, res) => {
   try {
     const cursor = usersCollection.find({});
     const allUsers = await cursor.toArray();
-    res.send({
+    res.status(200).send({
       success: true,
       message: "successfully got the all users data",
       data: allUsers,
     });
   } catch (error) {
     console.log(error.name.bgRed, error.message.bold);
-    res.status(400).send({
+    res.status(404).send({
       success: false,
       error: error.message,
     });
@@ -137,12 +137,12 @@ app.post("/addproperty", async (req, res) => {
     const addProperties = req.body;
     const result = await propertyCollection.insertOne(addProperties);
     if (result.insertedId) {
-      res.send({
+      res.status(200).send({
         success: true,
         message: `Successfully created  the Property with id ${result.insertedId}`,
       });
     } else {
-      res.send({
+      res.status(400).send({
         success: false,
         error: "Couldn't create the Property",
       });
@@ -160,19 +160,59 @@ app.get("/property", async (req, res) => {
   try {
     const cursor = propertyCollection.find({});
     const allUsers = await cursor.toArray();
-    res.send({
+    res.status(200).send({
       success: true,
       message: "successfully got the all Property data",
       data: allUsers,
     });
   } catch (error) {
     console.log(error.name.bgRed, error.message.bold);
-    res.status(400).send({
+    res.status(404).send({
       success: false,
       error: error.message,
     });
   }
 });
+
+//Rent property type
+app.get("/rent", async (req, res) => {
+  try {
+    const query = { propertyType: "Rent" };
+    const cursor = propertyCollection.find(query);
+    const allRent = await cursor.toArray();
+    res.status(200).send({
+      success: true,
+      message: "successfully got the all Rent data",
+      data: allRent,
+    });
+  } catch (error) {
+    console.log(error.name.bgRed, error.message.bold);
+    res.status(404).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// sell property type
+// app.get("/sell", async (req, res) => {
+//   try {
+//     const query = { propertyType: "Sell" };
+//     const cursor = propertyCollection.find(query);
+//     const allSell = await cursor.toArray();
+//     res.status(200).send({
+//       success: true,
+//       message: "successfully got the all Sell data",
+//       data: allSell,
+//     });
+//   } catch (error) {
+//     console.log(error.name.bgRed, error.message.bold);
+//     res.status(404).send({
+//       success: false,
+//       error: error.message,
+//     });
+//   }
+// });
 
 // app.get("/users/useseller/:email", async (req, res) => {
 //   const email = req.params.email;
