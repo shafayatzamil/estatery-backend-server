@@ -195,6 +195,27 @@ app.get("/rent", async (req, res) => {
   }
 });
 
+// single rent property
+app.get("/rent/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const singleRentProperty = await propertyCollection.findOne({
+      _id: new ObjectId(id),
+    });
+    res.status(200).send({
+      success: true,
+      message: "successfully got the single  Rent data",
+      data: singleRentProperty,
+    });
+  } catch (error) {
+    console.log(error.name.bgRed, error.message.bold);
+    res.status(404).send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // sell property type
 app.get("/sell", async (req, res) => {
   try {
