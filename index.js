@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv").config();
 const jwt = require("jsonwebtoken");
+const bodyParser = require("body-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 let colors = require("colors");
@@ -10,12 +11,14 @@ const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors());
-app.use(express.json());
+// app.use(express.json());
+
+app.use(bodyParser.json({ limit: "10mb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "10mb" }));
 
 // function to verifyJWT
 function verifyJWT(req, res, next) {
   const authHeader = req.header.authorization;
-
   if (!authHeader) {
     res.status(401).send({ message: "Unauthorized User" });
   }
@@ -61,7 +64,6 @@ const propertyCollection = client.db("estatery").collection("propertys");
 // jwt route token generation
 app.post("/jwt", (req, res) => {
   const user = req.body;
-  // console.log(user);
   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
     expiresIn: "1d",
   });
@@ -69,7 +71,6 @@ app.post("/jwt", (req, res) => {
 });
 
 // set route and implemented
-
 // default route set
 app.get("/", (req, res) => {
   try {
@@ -112,7 +113,6 @@ app.post("/users", async (req, res) => {
 });
 
 // all users
-
 app.get("/users", async (req, res) => {
   try {
     const cursor = usersCollection.find({});
@@ -178,7 +178,7 @@ app.get("/property", async (req, res) => {
 //Rent property type
 app.get("/rent", async (req, res) => {
   try {
-    const query = { propertyType: "Rent" };
+    const query = { propertyType: "rent" };
     const cursor = propertyCollection.find(query);
     const allRent = await cursor.toArray();
     res.status(200).send({
@@ -219,7 +219,7 @@ app.get("/rent/:id", async (req, res) => {
 // sell property type
 app.get("/sell", async (req, res) => {
   try {
-    const query = { propertyType: "Sell" };
+    const query = { propertyType: "sell" };
     const cursor = propertyCollection.find(query);
     const allSell = await cursor.toArray();
     res.status(200).send({
