@@ -5,6 +5,7 @@ const dotenv = require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const SSLCommerzPayment = require("sslcommerz-lts");
 const app = express();
 let colors = require("colors");
 const port = process.env.PORT || 5000;
@@ -15,6 +16,13 @@ app.use(cors());
 
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "10mb" }));
+
+// ssl commerce
+const store_id = `${process.env.SSL_COMERCEID}`;
+// dvdsv64c1245d789b8
+const store_passwd = `${process.env.SLL_COMMERCE_PASSWORD}`;
+// dvdsv64c1245d789b8@ssl
+const is_live = false;
 
 // function to verifyJWT
 function verifyJWT(req, res, next) {
@@ -60,6 +68,7 @@ dbConnect();
 // database set of collection
 const usersCollection = client.db("estatery").collection("users");
 const propertyCollection = client.db("estatery").collection("propertys");
+const orderCollection = client.db("estatery").collection("orders");
 
 // jwt route token generation
 app.post("/jwt", (req, res) => {
@@ -255,6 +264,95 @@ app.get("/sell/:id", async (req, res) => {
       error: error.message,
     });
   }
+});
+
+// delete property
+app.delete("/delete/:id", async (req, res) => {
+  const { id } = req.params;
+  console.log("deleted item id", id);
+  const singleSellProperty = await propertyCollection.findOne({
+    _id: new ObjectId(id),
+  });
+
+  const result = await propertyCollection.deleteOne({ _id: new ObjectId(id) });
+
+  res.send({
+    success: true,
+    message: `Successfully deleted the item`,
+  });
+
+  // res.send({
+  //   message: "product is found",
+  // });
+});
+
+// order the property
+app.post("/order", async (req, res) => {
+  const orderItem = req.body;
+  const id = orderItem.tennancyProductId;
+  const property = await propertyCollection.findOne({ _id: new ObjectId(id) });
+  const tran_id = new ObjectId().toString();
+  const data = {
+    total_amount: 100,
+    currency: "BDT",
+    tran_id: "REF123", // use unique tran_id for each api call
+    success_url: `http://localhost:3000/payment/success/${tran_id}`,
+    fail_url: "http://localhost:3030/fail",
+    cancel_url: "http://localhost:3030/cancel",
+    ipn_url: "http://localhost:3030/ipn",
+    shipping_method: "Courier",
+    product_name: "Computer.",
+    product_category: "Electronic",
+    product_profile: "general",
+    cus_name: "Customer Name",
+    cus_email: "customer@example.com",
+    cus_add1: "Dhaka",
+    cus_add2: "Dhaka",
+    cus_city: "Dhaka",
+    cus_state: "Dhaka",
+    cus_postcode: "1000",
+    cus_country: "Bangladesh",
+    cus_phone: "01711111111",
+    cus_fax: "01711111111",
+    ship_name: "Customer Name",
+    ship_add1: "Dhaka",
+    ship_add2: "Dhaka",
+    ship_city: "Dhaka",
+    ship_state: "Dhaka",
+    ship_postcode: 1000,
+    ship_country: "Bangladesh",
+  };
+  // res.send(data);
+  const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
+  sslcz.init(data).then((apiResponse) => {
+    // Redirect the user to payment gateway
+    let GatewayPageURL = apiResponse.GatewayPageURL;
+    res.send({ url: GatewayPageURL });
+    const finalOrder = {
+      property,
+      paidStatus: false,
+      transsectionId: tran_id,
+    };
+    const result = orderCollection.insertOne({ finalOrder });
+    console.log("Redirecting to: ", GatewayPageURL);
+  });
+
+  app.post("/payment/success/:trainId", async (req, res) => {
+    console.log(req.params.trainId);
+    // const result = await orderCollection.updateOne(
+    //   {
+    //     transsectionId: req.params.trainId,
+    //   },
+    //   {
+    //     $set: {
+    //       paidStatus: true,
+    //     },
+    //   }
+    // );
+    // if (result.modifiedcount > 0) {
+    res.redirect(`http://localhost:3000/payment/success/${req.params.trainId}`);
+    // }
+  });
 });
 
 // app.get("/users/useseller/:email", async (req, res) => {
