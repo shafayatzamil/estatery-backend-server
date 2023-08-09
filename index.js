@@ -6,16 +6,34 @@ const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const SSLCommerzPayment = require("sslcommerz-lts");
+const multer = require("multer");
 const app = express();
 let colors = require("colors");
+const path = require("path");
 const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors());
 // app.use(express.json());
-
+// app.use(express.static("./public"));
+app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.json({ limit: "10mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "10mb" }));
+
+// multer image storage
+//! Use of Multer
+var storage = multer.diskStorage({
+  destination: (req, file, callBack) => {
+    callBack(null, "./public/property-image/");
+  },
+  filename: (req, file, callBack) => {
+    callBack(null, file.originalname);
+  },
+});
+
+var upload = multer({
+  storage: storage,
+});
 
 // ssl commerce
 const store_id = `${process.env.SSL_COMERCEID}`;
@@ -141,9 +159,19 @@ app.get("/users", async (req, res) => {
 });
 
 // create add property
-app.post("/addproperty", async (req, res) => {
+app.post("/addproperty", upload.array("selectedImages"), async (req, res) => {
   try {
     const addProperties = req.body;
+    let uploadedImages = req.files;
+    const originalname = await uploadedImages.map(
+      (file) =>
+        // "https://estatery-backend-server.vercel.app/property-image/" +
+        "https://estatery-backend-server.vercel.app/property-image/" +
+        file.originalname
+    );
+    addProperties.imageURL = originalname;
+    // console.log(addProperties);
+
     const result = await propertyCollection.insertOne(addProperties);
     if (result.insertedId) {
       res.status(200).send({
@@ -289,19 +317,20 @@ app.delete("/delete/:id", async (req, res) => {
 // order the property
 app.post("/order", async (req, res) => {
   const orderItem = req.body;
-  const id = orderItem.tennancyProductId;
+  const propertyPrice = orderItem.PropertyPrice;
+  const id = orderItem.tenancyProductId;
   const property = await propertyCollection.findOne({ _id: new ObjectId(id) });
   const tran_id = new ObjectId().toString();
   const data = {
-    total_amount: 100,
+    total_amount: propertyPrice,
     currency: "BDT",
-    tran_id: "REF123", // use unique tran_id for each api call
-    success_url: `http://localhost:3000/payment/success/${tran_id}`,
-    fail_url: "http://localhost:3030/fail",
+    tran_id: tran_id,
+    success_url: `http://localhost:5000/payment/success/${tran_id}`,
+    fail_url: "http://localhost:5000/payment/failed",
     cancel_url: "http://localhost:3030/cancel",
     ipn_url: "http://localhost:3030/ipn",
     shipping_method: "Courier",
-    product_name: "Computer.",
+    product_name: `orderItem.propertyName`,
     product_category: "Electronic",
     product_profile: "general",
     cus_name: "Customer Name",
@@ -322,37 +351,52 @@ app.post("/order", async (req, res) => {
     ship_postcode: 1000,
     ship_country: "Bangladesh",
   };
-  // res.send(data);
+  console.log(data.success_url);
   const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live);
   sslcz.init(data).then((apiResponse) => {
     // Redirect the user to payment gateway
     let GatewayPageURL = apiResponse.GatewayPageURL;
     res.send({ url: GatewayPageURL });
+
     const finalOrder = {
       property,
       paidStatus: false,
       transsectionId: tran_id,
     };
-    const result = orderCollection.insertOne({ finalOrder });
-    console.log("Redirecting to: ", GatewayPageURL);
-  });
 
-  app.post("/payment/success/:trainId", async (req, res) => {
-    console.log(req.params.trainId);
-    // const result = await orderCollection.updateOne(
-    //   {
-    //     transsectionId: req.params.trainId,
-    //   },
-    //   {
-    //     $set: {
-    //       paidStatus: true,
-    //     },
-    //   }
-    // );
-    // if (result.modifiedcount > 0) {
-    res.redirect(`http://localhost:3000/payment/success/${req.params.trainId}`);
-    // }
+    const result = orderCollection.insertOne({ finalOrder });
   });
+});
+
+// // Define the success route outside the /order route handler
+app.post("/payment/success/:trainId", async (req, res) => {
+  // const result = await orderCollection.updateOne(
+  //   {
+  //     transsectionId: req.params.trainId,
+  //   },
+  //   {
+  //     $set: {
+  //       paidStatus: true,
+  //     },
+  //   }
+  // );
+  // console.log(result);
+  const result = await orderCollection.updateOne(
+    { "finalOrder.property.transsectionId": req.params.trainId },
+    {
+      $set: {
+        "finalOrder.property.paidStatus": true,
+      },
+    }
+  );
+
+  if (result.acknowledged == true) {
+    res.redirect(`http://localhost:3000/payment/success/${req.params.trainId}`);
+  }
+});
+
+app.post("/payment/failed", (req, res) => {
+  res.redirect(`http://localhost:3000/payment/failed`);
 });
 
 // app.get("/users/useseller/:email", async (req, res) => {
